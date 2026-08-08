@@ -515,7 +515,8 @@ Six rules govern how you build a seam:
 
 - **One task at a time.** Build a seam for the task the user asks for, not
   for every `user` and `split` row at once. Several open spec gates defeat
-  the point of having a gate.
+  the point of having a gate. A gate closes once the user accepts its tests;
+  you may build the next seam then.
 - **The stub must fail without aborting the run.** Where the language allows
   it, return a not-implemented error rather than raising one, so the
   remaining tests still report. A stub that kills the test binary hides the
@@ -598,12 +599,25 @@ reformat, or "quickly fix" a file the manifest currently assigns to the user
 they ask you to while they are mid-task. If they want you to take it, that is
 rung 4 of the stall ladder and it is an explicit handoff, not a favor.
 
-**Ownership transfers exactly once per task.** A `split` task's files start
-as yours: you write the mechanical remainder and the seam artifacts, and at
-handoff those files become the user's for the rest of the task. This is why a
-split hands off only when your side of it is complete — a half-built
+**Ownership transfers exactly once per task.** The files of a `user` or
+`split` row **start as yours** — you are the one who writes the stub, the
+failing tests and the wiring, which is the only reason Step 3's artifacts can
+exist at all — and at handoff they become the user's for the rest of the
+task. A split hands off only when your side of it is complete: a half-built
 remainder would put both of you in the same file at once, which the design
 does not permit.
+
+The rule above bites **after** the transfer. Before it, the file is yours to
+create; after it, it is untouchable. If the user has already written into a
+file whose seam you never built, that work is theirs and the transfer has
+effectively already happened — do not overwrite it.
+
+**Reassignment survives approval.** A row can change owners at any point, not
+only while the manifest is `draft`, by the same procedure: update the row,
+record the override in `Why`, leave the scores alone. The one difference
+after approval is that in-flight work may exist, so an explicit handoff must
+say whether the work already in the file is kept or discarded. Ask; never
+assume.
 
 **Progress signal.** The user's tests going green is the only signal. Do not
 poll, do not ask how it is going, do not check in mid-task.

@@ -118,7 +118,9 @@ Two rules govern the manifest, and neither is negotiable:
 
 **A redraw outranks the rule.** The human may reassign any row, and their call stands even where the rubric contradicts it — they are the approver, and the scores exist to inform that judgment rather than to overrule it. Record the override in the row's `Why` cell and leave the scores untouched. Never re-score a row to make its new owner look rule-derived: that hides a human decision behind arithmetic, and the manifest stops being an honest record of who chose what.
 
-Ownership is per file and can transfer exactly once per task. A `split` task's files start as the agent's: it writes the mechanical remainder and the seam artifacts, and **at handoff those files transfer to the human for the remainder of the task**. From that moment the agent treats them like any other human-owned file. This is why a split task hands off only when the agent's side of it is finished — a partially built remainder would require both parties in the same file at the same time, which the design does not permit.
+**Reassignment survives approval.** The redraw mechanics above are not confined to the draft stage: a row can move owners at any point, by the same procedure — update the row, record the override in `Why`, leave the scores alone. What changes after approval is only that in-flight work may exist, so the handoff must say explicitly whether existing work in the file is kept or discarded.
+
+Ownership is per file and can transfer exactly once per task. **The files of a `user` or `split` row start as the agent's** — it is the agent that writes the stub, the failing tests, and the wiring, which is why Part 2's artifacts can exist at all — and **at handoff they transfer to the human for the remainder of the task**. A `split` task's files start as the agent's for the same reason, with the mechanical remainder built before handoff. From that moment the agent treats them like any other human-owned file. This is why a split task hands off only when the agent's side of it is finished — a partially built remainder would require both parties in the same file at the same time, which the design does not permit.
 
 ---
 
@@ -141,7 +143,7 @@ The spec gate exists to counter the one real risk of a test-based contract: the 
 
 Six rules govern how a seam is built:
 
-- **One task at a time.** Build a seam for the task the human asks for, not for every `user` and `split` row at once. Several open spec gates defeat the point of having a gate.
+- **One task at a time.** Build a seam for the task the human asks for, not for every `user` and `split` row at once. Several open spec gates defeat the point of having a gate. A gate closes once the user accepts its tests; you may build the next seam then.
 - **The stub must fail without aborting the run.** Where the language allows it, return a not-implemented error rather than raising one, so the remaining tests still report. A stub that kills the test binary hides the rest of the spec behind the first assertion.
 - **Name what the signature decides.** A half-right body anchors the design — but so does a signature. If the contract forces a design choice (injecting a clock so refill can be tested without sleeping), say so at the gate and offer the alternative. The gate exists to surface those, not merely to approve assertions.
 - **The agent tests its own remainder.** Those tests are the agent's own and are neither part of the gate nor covered by test immutability.
