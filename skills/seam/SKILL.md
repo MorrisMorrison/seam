@@ -229,12 +229,25 @@ reformat, or "quickly fix" a file the manifest currently assigns to the user
 they ask you to while they are mid-task. If they want you to take it, that is
 rung 4 of the stall ladder and it is an explicit handoff, not a favor.
 
-**Ownership transfers exactly once per task.** A `split` task's files start
-as yours: you write the mechanical remainder and the seam artifacts, and at
-handoff those files become the user's for the rest of the task. This is why a
-split hands off only when your side of it is complete — a half-built
+**Ownership transfers exactly once per task.** The files of a `user` or
+`split` row **start as yours** — you are the one who writes the stub, the
+failing tests and the wiring, which is the only reason Step 3's artifacts can
+exist at all — and at handoff they become the user's for the rest of the
+task. A split hands off only when your side of it is complete: a half-built
 remainder would put both of you in the same file at once, which the design
 does not permit.
+
+The rule above bites **after** the transfer. Before it, the file is yours to
+create; after it, it is untouchable. If the user has already written into a
+file whose seam you never built, that work is theirs and the transfer has
+effectively already happened — do not overwrite it.
+
+**Reassignment survives approval.** A row can change owners at any point, not
+only while the manifest is `draft`, by the same procedure: update the row,
+record the override in `Why`, leave the scores alone. The one difference
+after approval is that in-flight work may exist, so an explicit handoff must
+say whether the work already in the file is kept or discarded. Ask; never
+assume.
 
 **Progress signal.** The user's tests going green is the only signal. Do not
 poll, do not ask how it is going, do not check in mid-task.
@@ -246,3 +259,55 @@ obvious the implementation looks. Report like this:
 > My tasks are done: <list>. Yours outstanding: <list>. Full suite: <state>.
 
 Then go to Step 5.
+
+## Step 5 — The stall ladder
+
+Stalling is expected, not a failure. It has one defined exit.
+
+**Trigger.** You have no clock — you exist only when invoked. The trigger is
+finishing your own tasks and finding the user's tests still red. Offer the
+ladder then, **once**.
+
+**Offer it exactly once.** If the user does not take a rung, say nothing
+further about it. Do not re-offer on your next turn, do not append a reminder
+to an unrelated answer, do not ask how it is going. Repeated prompting is
+worse than none — it converts a stall into a reason to leave.
+
+| Rung | You give | You must not |
+|---|---|---|
+| 1 · hint | One nudge toward the idea | Write code |
+| 2 · bigger hint | The approach, concretely | Write code |
+| 3 · draft | A first attempt for them to reshape | Present it as finished |
+| 4 · take it | Full handoff; the task becomes yours | Offer this yourself |
+
+**Rung 4 is never offered by you.** It exists, it is always available, and
+the user invokes it. The user's stated goal is to stay on the piece; treating
+handoff as the natural next step works against the reason they took it. When
+they do invoke it, take it cleanly — no relitigating, no "are you sure".
+
+Post the offer as:
+
+> Your tasks are still open. Want a hint, a bigger hint, or a draft to
+> reshape?
+
+## Step 6 — Integrate and hand to reef
+
+When the user's tests go green:
+
+1. Run the full suite. If something unrelated broke, report it; do not fix
+   the user's code to make it pass.
+2. Update the manifest: their rows to `green`, then `integrated` once the
+   suite is clean.
+3. Hand the complete diff to the `reef` skill for the gated walkthrough, with
+   **every hunk labeled `user` or `agent`** so authorship is visible during
+   review.
+4. **Review the user's hunks as well as your own.** Their hunks are by
+   definition the highest-blast-radius code in the plan; leaving them
+   unreviewed would mean the riskiest code is the only code nothing checks.
+   Frame findings as a risk check, not a critique: state the condition under
+   which the code is wrong, not an opinion about the code.
+5. **Never silently repair the user's code.** If something is wrong, report
+   it and stop. A silent fix costs them the comprehension they took the task
+   to gain — which defeats the entire point of the split.
+
+If the full suite is red because of *your* code, fix it before handing over.
