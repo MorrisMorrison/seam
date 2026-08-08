@@ -419,6 +419,14 @@ approval.
 If the user says something ambiguous ("looks fine, though task 3 seems
 heavy"), treat it as a redraw request and ask, rather than reading it as
 consent.
+
+**A redraw outranks the rule.** The user may reassign any row, and their
+call stands even where the rubric contradicts it — they are the approver,
+and the scores exist to inform that judgment, not to overrule it. Record the
+override in the row's `Why` cell and leave the scores untouched. **Never
+re-score a row to make its new owner look rule-derived**: that hides a human
+decision behind arithmetic, and the manifest stops being an honest record of
+who chose what.
 ````
 
 - [ ] **Step 3: Run the approval-gate application test**

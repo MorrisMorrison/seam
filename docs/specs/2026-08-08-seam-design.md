@@ -116,6 +116,8 @@ Two rules govern the manifest, and neither is negotiable:
 - **Nothing starts until the manifest is approved.** A bad split is the failure mode with no recovery, so the one gate that cannot be automated is the human reading the table and redrawing any line they disagree with. Scores exist to make each line arguable rather than arbitrary.
 - **The manifest records file ownership per task.** The agent is structurally forbidden from writing to any file the manifest currently assigns to the human. Disjointness is guaranteed by construction, so no merge protocol is needed and no worktree is required.
 
+**A redraw outranks the rule.** The human may reassign any row, and their call stands even where the rubric contradicts it — they are the approver, and the scores exist to inform that judgment rather than to overrule it. Record the override in the row's `Why` cell and leave the scores untouched. Never re-score a row to make its new owner look rule-derived: that hides a human decision behind arithmetic, and the manifest stops being an honest record of who chose what.
+
 Ownership is per file and can transfer exactly once per task. A `split` task's files start as the agent's: it writes the mechanical remainder and the seam artifacts, and **at handoff those files transfer to the human for the remainder of the task**. From that moment the agent treats them like any other human-owned file. This is why a split task hands off only when the agent's side of it is finished — a partially built remainder would require both parties in the same file at the same time, which the design does not permit.
 
 ---
