@@ -92,6 +92,12 @@ smallest retained unit whose remainder still scores `agent`. An irreversible
 write always stays inside the retained unit — never take for yourself the
 part that cannot be undone.
 
+**The remainder must be task-sized.** If what is left after removing the
+retained unit would not have stood as its own task in a plan — a single
+entrypoint, one call site, a config line — there is nothing worth splitting.
+Keep the whole task with the user. A split exists to spare them mechanical
+bulk; where there is no bulk, it is only ceremony.
+
 **A `split` row's Blast and Debt describe the retained unit**, not the whole
 task.
 
@@ -117,9 +123,9 @@ status: draft
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
-| 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
-| 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
+| 1 | Invoice tax calculation | 3 | 3 | user | internal/billing/tax.go | pending | Wrong tax is silent, and irreversible once invoiced |
+| 2 | Locale string loader | 1 | 1 | agent | internal/i18n/*.go | pending | Settled schema, loud failure |
+| 3 | Search result ranking | 2 | 3 | split | internal/search/*.go | pending | Query plumbing is mechanical; the ranking function is not |
 ```
 
 - `Files` lists every path the task will touch. Derive it from the plan; if
@@ -143,3 +149,43 @@ approval.
 If the user says something ambiguous ("looks fine, though task 3 seems
 heavy"), treat it as a redraw request and ask, rather than reading it as
 consent.
+
+**A redraw outranks the rule.** The user may reassign any row, and their
+call stands even where the rubric contradicts it — they are the approver,
+and the scores exist to inform that judgment, not to overrule it. Record the
+override in the row's `Why` cell and leave the scores untouched. **Never
+re-score a row to make its new owner look rule-derived**: that hides a human
+decision behind arithmetic, and the manifest stops being an honest record of
+who chose what.
+
+## Step 3 — Build the seam
+
+For each task owned `user` or `split`, produce four artifacts **before the
+user writes anything**:
+
+1. **The stub**, in the real file — signature, doc comment stating intent and
+   invariants, and an explicit list of non-goals. Its body raises or returns
+   a not-implemented error. Never a plausible guess: a half-right body is
+   worse than an empty one, because it anchors the design.
+2. **Failing tests** encoding the required behavior, including the edge cases
+   the plan names.
+3. **The surrounding wiring**, already calling that stub, so the user sees
+   their piece in context.
+4. **The spec gate.** Post the test names and what each asserts, then ask:
+
+   > These tests are the spec for `<unit>`. Agree, or edit them?
+
+**Stop there and wait.** The gate exists because your tests would otherwise
+silently pre-decide the user's design. One screen of review now is cheaper
+than discovering the constraint halfway through an implementation.
+
+**Test immutability.** Once the user accepts the tests, you may not modify,
+relax, or add to them without asking. Not to make them pass, not because the
+implementation took a different shape, not to be helpful. Moving the
+goalposts mid-implementation is the single most damaging thing you can do
+here. If a test looks wrong once the user is working, say so and ask.
+
+`user` and `split` differ only in what you do **after** the handoff. In both
+cases you build the contract. In a `split` you have also already implemented
+the mechanical remainder of that task; in a `user` the whole implementation
+is the user's.
