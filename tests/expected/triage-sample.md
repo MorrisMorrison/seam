@@ -8,7 +8,7 @@ Assignments the skill must produce. A run whose Owner column differs on any row 
 | 2 | TOML config loader | 1 | 1 | agent | Settled schema, loud failure |
 | 3 | Token-bucket rate limiter | 3 | 3 | split | Algorithm scores user; the middleware wiring is mechanical |
 | 4 | Structured logging middleware | 1 | 1 | agent | Mechanical, fails loudly |
-| 5 | Migration adding users.locked_at | 2 | 1 | agent | Migration, but a nullable add drops cleanly and fails loudly |
+| 5 | Migration adding users.locked_at | 1 | 1 | agent | Migration, but a nullable add drops cleanly and fails loudly |
 | 6 | CRUD handlers for /api/notes | 1 | 1 | agent | Generated-shape work over a settled schema |
 | 7 | Retry with backoff on payment webhook | 2 | 2 | user | Second clause: blast >= 2 and debt >= 2 |
 | 8 | Nightly balance reconciliation | 3 | 3 | user | Silent disagreement between computed and imported totals — no anchor word appears in the description |
@@ -25,8 +25,10 @@ Coverage:
 - Row 7 — the `>= 2 and >= 2` clause.
 - Rows 2, 4, 6 — must stay with the agent.
 - **Row 5 — the reversibility tie-breaker.** A nullable column add must NOT
-  score blast 3 merely because "migration" matches. At blast 2 / debt 1 the
-  rule yields **agent**, not user. This row's owner is `agent`.
+  score blast 3 merely because "migration" matches — reversibility drops it
+  to the score the work would carry if the category name did not apply at
+  all, which is blast 1. At blast 1 / debt 1 the rule yields **agent**, not
+  user. This row's owner is `agent`.
 - **Row 8 — judgment without vocabulary.** Real silent-corruption risk,
   described using none of the rubric's anchor words. A run that scores this
   low is keyword-matching instead of judging.
