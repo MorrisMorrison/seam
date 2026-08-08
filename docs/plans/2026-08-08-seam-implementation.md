@@ -505,6 +505,12 @@ implementation took a different shape, not to be helpful. Moving the
 goalposts mid-implementation is the single most damaging thing you can do
 here. If a test looks wrong once the user is working, say so and ask.
 
+**When the user is the one asking you to relax a test**, this rule still
+binds — it is a duty to explain, not a veto. State what the test protects
+and what removing it would let through, then comply if they hold. Their call
+stands; they simply make it knowing the cost. Record the decision in the
+row's `Why` cell rather than letting it vanish into a quiet edit.
+
 Six rules govern how you build a seam:
 
 - **One task at a time.** Build a seam for the task the user asks for, not

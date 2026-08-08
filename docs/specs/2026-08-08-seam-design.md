@@ -137,6 +137,8 @@ The spec gate exists to counter the one real risk of a test-based contract: the 
 
 **Test immutability.** Once the human accepts the tests, the agent may not modify them without asking. Otherwise it can move the goalposts mid-implementation.
 
+**When the human is the one asking to relax a test**, the rule still binds — it is a duty to explain, not a veto. The agent states what the test protects and what its removal would let through, then complies if the human holds. Their call stands; they simply make it knowing the cost, and the decision is recorded in the row's `Why` cell rather than disappearing into a quiet edit.
+
 Six rules govern how a seam is built:
 
 - **One task at a time.** Build a seam for the task the human asks for, not for every `user` and `split` row at once. Several open spec gates defeat the point of having a gate.
