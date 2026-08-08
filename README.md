@@ -19,11 +19,12 @@ the gaps around it.
    comprehension debt, then assigned. Nothing starts until you approve the
    manifest.
 2. **Seam** — for your units the agent writes a stub, failing tests, and the
-   surrounding wiring, then asks whether the tests are the spec you want.
+   surrounding wiring, then asks whether the tests are the spec you want. Edit
+   them at that gate; the files become yours when you accept.
 3. **Parallel** — it works its tasks, never touching a file you own. Out of
    work, it stops and reports.
-4. **Stall ladder** — hint, bigger hint, or a draft to reshape, offered once.
-   Full handoff exists and is yours to invoke.
+4. **Stall ladder** — hint, bigger hint, or a draft to reshape, offered once
+   per stall. Full handoff exists and is yours to invoke.
 5. **Integration** — full suite, then reef with hunks labeled by author.
 
 ## Install

@@ -238,8 +238,24 @@ Expected before this task is implemented: the skill has no scoring instructions,
 ````markdown
 ## Step 1 — Score every task
 
-Read the plan. Score each task on two independent axes, 1–3. Score the task
-as written; do not invent requirements it does not state.
+**Check for an existing manifest first.** Before reading the plan, look for
+`docs/seam/<plan-slug>.md`. If it exists, this is a resumed run: read it and
+resume from it. Report where things stand — which rows are yours, which are
+the user's, and the status of each — and continue from there. **Do not
+re-score, do not rewrite the `Why` column, and do not reset `status:`.** An
+approved manifest stays approved, and every redraw, reassignment and
+recorded decision in it is a decision already made. The manifest is the only
+state seam keeps; overwriting it destroys the history that makes the run
+resumable. Write a fresh manifest only when none exists.
+
+Otherwise, read the plan. Score each task on two independent axes, 1–3. Score
+the task as written; do not invent requirements it does not state.
+
+**Inherent properties of where the code runs count as written.** An HTTP
+handler serves concurrent requests; a nightly job runs unattended. Those are
+facts about the work, not requirements you invented. What you may not add are
+unstated *requirements*: a scale, a deployment topology, an SLA, or a threat
+model the plan never mentions.
 
 **Blast radius — how bad is *wrong*?**
 
@@ -249,6 +265,15 @@ as written; do not invent requirements it does not state.
 | 2 | Recoverable but costly. Wrong output reaching users, performance cliffs, retry and idempotency logic, external API contracts. |
 | 1 | Fails loudly, cheap to fix. Rendering, formatting, config plumbing, logging, CRUD over a settled schema. |
 
+**The blast-3 row ends in a catch-all — "anything that can fail without
+producing an error" — and it is a fallback, not an anchor.** It exists to
+catch work that no named category reaches. Where a task matches a **named**
+anchor in a lower row — `retry and idempotency logic`, `performance cliffs`,
+`external API contracts`, `logging`, `CRUD over a settled schema` — that
+named match governs and the catch-all does not promote it. **A specifically
+named lower anchor beats the catch-all**; the catch-all applies only where no
+named anchor covers the task.
+
 **Two tie-breakers, both required. Apply precedence first, then
 reversibility.** They pull in opposite directions by design: precedence
 prevents under-scoring, reversibility prevents scoring a category name
@@ -257,17 +282,19 @@ instead of the work.
 - **Precedence on multiple matches.** Tasks routinely match anchors in two
   rows — evicting entries from a shared session cache matches both
   `concurrency and races` (3) and `performance cliffs` (2). **The highest
-  matching anchor wins.** Name both matches in the justification so the call
-  is visible and arguable rather than silent.
+  matching named anchor wins.** Name both matches in the justification so the
+  call is visible and arguable rather than silent. Precedence settles
+  conflicts between two *named* anchors; it never fires the catch-all against
+  a name.
 - **Reversibility.** Category names are a starting point, not a verdict —
   score the *instance*. Ask whether this specific change is reversible and
-  whether it fails loudly. Adding an unused enum value is a schema change,
-  but it is reversible and fails immediately: score it 1. A backfill that
-  rewrites existing rows cannot be undone: score it 3. **When reversibility
-  clears a category match, drop to the score the work would carry if the
-  category name did not apply at all** — do not split the difference.
-  Without this you hand the user safe, boring work purely because a category
-  name matched.
+  whether it fails loudly. Deleting a generated thumbnail matches `data loss`
+  by name, but it is rebuilt from the original on next request and its
+  absence shows immediately: score it 1. Deleting the original upload it was
+  derived from cannot be undone: score it 3. **When reversibility clears a
+  category match, drop to the score the work would carry if the category name
+  did not apply at all** — do not split the difference. Without this you hand
+  the user safe, boring work purely because a category name matched.
 
 **Comprehension debt — can the user own this later if they did not write it?**
 
@@ -276,6 +303,14 @@ instead of the work.
 | 3 | Novel algorithm or load-bearing domain logic. Cannot be re-derived by reading; central to the system's model. |
 | 2 | Nontrivial but conventional. Re-following it later costs real time. |
 | 1 | Mechanical or generated. Reading it is understanding it. |
+
+**3 versus 2.** "Conventional" means the work has a **canonical published form
+the implementer would follow** — a documented algorithm, a standard protocol
+exchange, the ordinary shape of a well-known library. That is a 2 however
+fiddly it is to re-follow. Reserve 3 for logic whose shape is specific to this
+system: it cannot be looked up, only re-derived from the domain. Work that is
+both central and canonical scores 2 — being load-bearing does not make a
+published algorithm unlearnable.
 
 **Assignment rule** — apply exactly, with no adjustment for how busy or
 capable you feel:
@@ -393,8 +428,8 @@ status: draft
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Invoice tax calculation | 3 | 3 | user | internal/billing/tax.go | pending | Wrong tax is silent, and irreversible once invoiced |
-| 2 | Locale string loader | 1 | 1 | agent | internal/i18n/*.go | pending | Settled schema, loud failure |
+| 1 | Offline sync conflict resolution | 3 | 3 | user | internal/sync/merge.go | pending | Diverged replicas drop edits without complaining; the merge rules are ours alone |
+| 2 | Static asset fingerprinting | 1 | 1 | agent | internal/assets/*.go | pending | Deterministic rewrite, and a wrong hash 404s on sight |
 | 3 | Search result ranking | 2 | 3 | split | internal/search/*.go | pending | Query plumbing is mechanical; the ranking function is not |
 ```
 
@@ -402,6 +437,13 @@ status: draft
   the plan does not say, infer from the repo layout and mark the cell
   `_(verify)_` so the user can correct it. This column is load-bearing —
   Step 4 enforces ownership from it.
+- **Differently-owned rows must have disjoint `Files` sets.** Two rows with
+  the same owner may share a path. Two rows with different owners may not, and
+  a wildcard must not straddle an ownership boundary — `internal/report/*.go`
+  cannot sit on a `user` row if some file under it belongs to an `agent` row;
+  narrow it to the paths actually retained. An overlap is not a collision to
+  manage at write time: it means the split is drawn in the wrong place.
+  Redraw the boundary before the manifest goes up for approval.
 - `Status` is one of `pending`, `in-progress`, `blocked`, `green`,
   `integrated`.
 - `Why` is one line. It justifies the score, not the task.
@@ -499,10 +541,19 @@ user writes anything**:
 silently pre-decide the user's design. One screen of review now is cheaper
 than discovering the constraint halfway through an implementation.
 
-**Posting the spec gate *is* the handoff.** That is the moment the row's
-files stop being yours and become the user's. There is no separate status
-for it — the gate is the event. Everything you intend to write into those
-files must already be there when you post.
+**The handoff is the user's acceptance of the gate, not your posting of it.**
+Everything you intend to write into those files must already be there when
+you post — the gate is your last write, not a pause in the middle of a series
+of them. But the files remain yours until the user accepts, which is what
+makes the question answerable: when they say "assert the empty case too" or
+"take an interface, not a struct", **you make that edit, re-post, and wait
+again**. Editing at the gate is the gate's entire purpose; a gate you cannot
+act on is a notification.
+
+**Acceptance transfers the files to the user for the rest of the task.** There
+is no separate status value for it — acceptance is the event. From that
+moment the rules below bind, and anything you failed to write before posting
+stays unwritten.
 
 **A defect you find in your own artifact after handoff is not yours to
 repair.** If a stub you wrote aborts the run, or a test you wrote asserts the
@@ -540,10 +591,10 @@ Six rules govern how you build a seam:
   remaining tests still report. A stub that kills the test binary hides the
   rest of the spec behind the first assertion.
 - **Name what the signature decides.** A half-right body anchors the design
-  — but so does a signature. If your contract forces a design choice
-  (injecting a clock so refill can be tested without sleeping), say so at
-  the gate and offer the alternative. The gate exists to surface those, not
-  merely to approve assertions.
+  — but so does a signature. If your contract forces a design choice (taking
+  a seeded random source as a parameter, so shuffle order can be asserted
+  rather than merely sampled), say so at the gate and offer the alternative.
+  The gate exists to surface those, not merely to approve assertions.
 - **Test your own remainder.** Those tests are yours. They are not part of
   the gate and not covered by test immutability.
 - **Unassigned scaffolding is yours.** A module file or build config the
@@ -594,7 +645,7 @@ git commit -m "feat: add seam contract artifacts and spec gate"
 
 **Interfaces:**
 - Consumes: the `Files` and `Owner` columns from Task 3's manifest.
-- Produces: the ownership invariant every later step assumes — the agent never writes a user-owned file, and ownership transfers exactly once per task.
+- Produces: the ownership invariant every later step assumes — the agent never writes a user-owned file, and ownership changes only by a recorded manifest edit, never implicitly.
 
 - [ ] **Step 1: Define the failing test**
 
@@ -615,27 +666,37 @@ While the user implements their piece, execute your own manifest tasks.
 reformat, or "quickly fix" a file the manifest currently assigns to the user
 — including their tests, including a one-line obvious repair, including when
 they ask you to while they are mid-task. If they want you to take it, that is
-rung 4 of the stall ladder and it is an explicit handoff, not a favor.
+an explicit, recorded owner change — rung 4 of the stall ladder for a whole
+task, or a return of the file for a single artifact — not a favor.
 
-**Ownership transfers exactly once per task.** The files of a `user` or
-`split` row **start as yours** — you are the one who writes the stub, the
-failing tests and the wiring, which is the only reason Step 3's artifacts can
-exist at all — and at handoff they become the user's for the rest of the
-task. A split hands off only when your side of it is complete: a half-built
-remainder would put both of you in the same file at once, which the design
-does not permit.
+**Ownership changes only by a recorded manifest edit, never implicitly.** The
+files of a `user` or `split` row **start as yours** — you are the one who
+writes the stub, the failing tests and the wiring, which is the only reason
+Step 3's artifacts can exist at all — and they become the user's when the
+user accepts the spec gate. A split hands off only when your side of it is
+complete: a half-built remainder would put both of you in the same file at
+once, which the design does not permit.
 
-The rule above bites **after** the transfer. Before it, the file is yours to
+**One procedure covers every owner change.** A redraw before approval, a
+reassignment after it, a rung 4 handoff, and an explicit return of a file to
+you are the same event under different names: **update the row's `Owner`,
+record the reason in `Why`, and leave `Blast` and `Debt` untouched.** Rung 4
+is not an exception — when the user invokes it, the manifest is edited like
+any other owner change. There is no cap on how often a row can change hands;
+the requirement is only that every change is written down, so the row always
+names its current owner.
+
+The ownership rule bites **after** a transfer. Before it, the file is yours to
 create; after it, it is untouchable. If the user has already written into a
 file whose seam you never built, that work is theirs and the transfer has
-effectively already happened — do not overwrite it.
+effectively already happened — do not overwrite it. Do not edit the row to
+describe a handoff you never made either: say the manifest is out of date and
+leave the recording to them.
 
 **Reassignment survives approval.** A row can change owners at any point, not
-only while the manifest is `draft`, by the same procedure: update the row,
-record the override in `Why`, leave the scores alone. The one difference
-after approval is that in-flight work may exist, so an explicit handoff must
-say whether the work already in the file is kept or discarded. Ask; never
-assume.
+only while the manifest is `draft`. The one difference after approval is that
+in-flight work may exist, so an explicit handoff must say whether the work
+already in the file is kept or discarded. Ask; never assume.
 
 **Progress signal.** The user's tests going green is the only signal. Do not
 poll, do not ask how it is going, do not check in mid-task.
@@ -703,12 +764,17 @@ Stalling is expected, not a failure. It has one defined exit.
 
 **Trigger.** You have no clock — you exist only when invoked. The trigger is
 finishing your own tasks and finding the user's tests still red. Offer the
-ladder then, **once**.
+ladder then, **once per stall episode**.
 
-**Offer it exactly once.** If the user does not take a rung, say nothing
-further about it. Do not re-offer on your next turn, do not append a reminder
-to an unrelated answer, do not ask how it is going. Repeated prompting is
-worse than none — it converts a stall into a reason to leave.
+**One offer per stall episode.** An episode begins when you offer the ladder
+on a row and ends when the user next acts on that row — taking a rung,
+pushing work into it, reporting it green, or reassigning it. While the offer
+is outstanding, say nothing further about it: do not re-offer on your next
+turn, do not append a reminder to an unrelated answer, do not ask how it is
+going. Repeated prompting is worse than none — it converts a stall into a
+reason to leave. Once the episode has ended, a later stall on that row is a
+new episode and may be offered once again. Never two live offers for the same
+row.
 
 | Rung | You give | You must not |
 |---|---|---|
@@ -720,7 +786,9 @@ worse than none — it converts a stall into a reason to leave.
 **Rung 4 is never offered by you.** It exists, it is always available, and
 the user invokes it. The user's stated goal is to stay on the piece; treating
 handoff as the natural next step works against the reason they took it. When
-they do invoke it, take it cleanly — no relitigating, no "are you sure".
+they do invoke it, take it cleanly — no relitigating, no "are you sure" — and
+record the owner change in the manifest exactly as Step 4 requires: new
+`Owner`, reason in `Why`, scores untouched.
 
 Post the offer as:
 
@@ -790,7 +858,11 @@ When the user's tests go green:
    it and stop. A silent fix costs them the comprehension they took the task
    to gain — which defeats the entire point of the split.
 
-If the full suite is red because of *your* code, fix it before handing over.
+**If the full suite is red because of code in a file you still own, fix it
+before handing over.** Ownership decides this, not authorship. A fault in a
+stub, test, or wiring *you* wrote that now sits in a user-owned file is not
+yours to repair: report it under Step 3's post-handoff rule — state the fault
+and what the correct version would be — and never edit it.
 
 **If the user reports green and the suite disagrees, Step 6 has not begun.**
 Report what the runner printed and which files the failures are confined to,
@@ -799,7 +871,9 @@ only the user sets `blocked`. **Do not diagnose beyond the failure output** —
 an explanation of why their code fails is a ladder rung, and rungs are asked
 for, never volunteered. Someone who believes they are finished experiences an
 unsolicited diagnosis as a correction rather than help. Let the failing
-output speak, and offer the ladder once.
+output speak. Their report of green was an act on the row, so it closed any
+stall episode that was open: you may offer the ladder here, once, provided no
+offer is already outstanding for that row.
 
 **Report recorded status as recorded.** If a row is marked `integrated` but
 its files are not in the checkout, say that you are reporting the manifest,
@@ -953,7 +1027,7 @@ git commit -m "docs: add README and record application test results"
 | Ownership transfer, parallel execution, stop-and-report | 5 |
 | Stall ladder, trigger, rungs, rung 4 manual only | 6 |
 | Integration, reef handoff, review of user hunks, no silent repair | 7 |
-| State and resumability | 3 (the manifest *is* the state) |
+| State and resumability | 2 (resume from an existing manifest) and 3 (the manifest *is* the state) |
 | Failure-mode table | 3, 4, 5 (redraw, wrong tests, collision) |
 | Validation by application test, not weak models | 1, 8 |
 | Non-goals (no gamification, single repo, no wall-clock timer) | Global Constraints |
