@@ -302,6 +302,11 @@ divide.
 **`mechanical` means the remainder scores `agent` on its own** under this
 same rubric. Not "smaller", not "boring" — scored.
 
+**When several boundaries pass the stub test**, take the one leaving the
+smallest retained unit whose remainder still scores `agent`. An irreversible
+write always stays inside the retained unit — never take for yourself the
+part that cannot be undone.
+
 **A `split` row's Blast and Debt describe the retained unit**, not the whole
 task.
 
