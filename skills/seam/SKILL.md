@@ -87,6 +87,11 @@ divide.
 **`mechanical` means the remainder scores `agent` on its own** under this
 same rubric. Not "smaller", not "boring" — scored.
 
+**When several boundaries pass the stub test**, take the one leaving the
+smallest retained unit whose remainder still scores `agent`. An irreversible
+write always stays inside the retained unit — never take for yourself the
+part that cannot be undone.
+
 **A `split` row's Blast and Debt describe the retained unit**, not the whole
 task.
 
@@ -98,3 +103,43 @@ have already built.
 them to give the user more.** The rule is the whole point: it makes each line
 arguable rather than arbitrary. If you think a score is wrong, say so in the
 justification — do not quietly change the assignment.
+
+## Step 2 — Write the manifest, then stop
+
+Write `docs/seam/<plan-slug>.md` in the target repo, where `<plan-slug>` is
+the plan's filename without its date prefix or extension.
+
+```markdown
+# seam manifest — <plan name>
+
+plan: docs/plans/<plan-file>.md
+status: draft
+
+| # | Task | Blast | Debt | Owner | Files | Status | Why |
+|---|------|-------|------|-------|-------|--------|-----|
+| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
+| 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
+| 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
+```
+
+- `Files` lists every path the task will touch. Derive it from the plan; if
+  the plan does not say, infer from the repo layout and mark the cell
+  `_(verify)_` so the user can correct it. This column is load-bearing —
+  Step 4 enforces ownership from it.
+- `Status` is one of `pending`, `in-progress`, `blocked`, `green`,
+  `integrated`.
+- `Why` is one line. It justifies the score, not the task.
+
+Then **post the table in chat and stop.** Ask exactly:
+
+> Manifest written to `docs/seam/<plan-slug>.md`. Redraw any line you
+> disagree with, or say go.
+
+**Do not begin any task while `status: draft`.** When the user approves,
+change the file's `status:` to `approved` and only then proceed. If the user
+redraws a line, update the row, re-post, and ask again — a redraw is not an
+approval.
+
+If the user says something ambiguous ("looks fine, though task 3 seems
+heavy"), treat it as a redraw request and ask, rather than reading it as
+consent.
