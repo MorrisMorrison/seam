@@ -31,6 +31,20 @@ as written; do not invent requirements it does not state.
 | 2 | Recoverable but costly. Wrong output reaching users, performance cliffs, retry and idempotency logic, external API contracts. |
 | 1 | Fails loudly, cheap to fix. Rendering, formatting, config plumbing, logging, CRUD over a settled schema. |
 
+**Two tie-breakers, both required.**
+
+- **Reversibility.** Category names are a starting point, not a verdict —
+  score the *instance*. Ask whether this specific change is reversible and
+  whether it fails loudly. Adding a nullable column is a schema migration,
+  but it drops cleanly and fails immediately: score it 1–2. A backfill that
+  rewrites existing rows is a 3. Without this you hand the user safe, boring
+  work purely because a category name matched.
+- **Precedence on multiple matches.** Tasks routinely match anchors in two
+  rows — a payment webhook matches both `money movement` (3) and `retry and
+  idempotency logic` (2). **The highest matching anchor wins**, unless the
+  reversibility test clears it. Name both matches in the justification so the
+  call is visible and arguable rather than silent.
+
 **Comprehension debt — can the user own this later if they did not write it?**
 
 | Score | Anchor |
@@ -43,10 +57,10 @@ as written; do not invent requirements it does not state.
 capable you feel:
 
 ```
-yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
+user     if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
 agent    otherwise
 
-A `yours` task becomes `split` when the qualifying risk is confined to an
+A `user` task becomes `split` when the qualifying risk is confined to an
 identifiable unit and the remainder is mechanical: the user takes the
 unit, you take the remainder.
 ```
@@ -54,11 +68,11 @@ unit, you take the remainder.
 **Score by the riskiest unit in the task, not by its bulk.** A task
 containing a novel algorithm scores on that algorithm even if most of its
 lines are wiring. `split` is what stops that from handing the user the
-wiring too — the rate-limiter algorithm is theirs, the middleware around
-it is yours.
+wiring too: in a task that computes a pricing tier and then renders it into
+a form, the pricing calculation is theirs and the form scaffolding is yours.
 
 A `split` is therefore not a compromise between the two owners, and not a
-lower grade of `yours`. It is a `yours` task whose mechanical remainder you
+lower grade of `user`. It is a `user` task whose mechanical remainder you
 have already built.
 
 **Never inflate scores to take work off the user's plate, and never deflate

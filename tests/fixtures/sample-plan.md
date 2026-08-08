@@ -22,3 +22,12 @@ List, get, create, update, delete over the existing notes table.
 
 ### Task 7: Retry with backoff on payment webhook
 Retry failed outbound webhook deliveries with exponential backoff and a delivery cap.
+
+### Task 8: Nightly balance reconciliation
+Compare each account's computed running total against the imported statement feed, and mark every row where the two disagree.
+
+### Task 9: Refund handler for cancelled orders
+On cancellation, issue a refund through the payment provider and retry failed attempts up to a cap.
+
+### Task 10: Migration adding an index to notes.created_at
+Add an index on the existing `notes.created_at` column.
