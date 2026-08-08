@@ -16,10 +16,10 @@
 - **No gamification** — no scores-as-points, XP, streaks, or praise inflation. Explicitly rejected by the user during the reef build and again here. (The 1–3 risk scores are a triage rubric, not a game.)
 - Assignment rule, copied verbatim from the spec:
   ```
-  yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
+  user     if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
   agent    otherwise
 
-  A `yours` task becomes `split` when the qualifying risk is confined to an
+  A `user` task becomes `split` when the qualifying risk is confined to an
   identifiable unit and the remainder is mechanical: the human takes the
   unit, the agent takes the remainder.
   ```
@@ -41,7 +41,7 @@ Produces an installable no-op skill plus the fixture every later task tests agai
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: the fixture plan `tests/fixtures/sample-plan.md` containing exactly 7 tasks with the expected assignments recorded in `tests/expected/triage-sample.md`. Every later task's application test runs against this fixture.
+- Produces: the fixture plan `tests/fixtures/sample-plan.md` containing exactly 10 tasks with the expected assignments recorded in `tests/expected/triage-sample.md`. Every later task's application test runs against this fixture.
 
 - [ ] **Step 1: Write the expected-output file first (this is the failing test)**
 
@@ -50,19 +50,41 @@ Create `tests/expected/triage-sample.md`:
 ```markdown
 # Expected triage — sample-plan.md
 
-Assignments the skill must produce. A run that differs on any row is a failure.
+Assignments the skill must produce. A run whose Owner column differs on any row is a failure.
 
 | # | Task | Blast | Debt | Owner | Why |
 |---|------|-------|------|-------|-----|
-| 1 | JWT refresh-token rotation | 3 | 2 | yours | Auth failure is silent; max == 3 |
+| 1 | JWT refresh-token rotation | 3 | 2 | user | Auth failure is silent; max == 3 |
 | 2 | TOML config loader | 1 | 1 | agent | Settled schema, loud failure |
-| 3 | Token-bucket rate limiter | 3 | 3 | split | Algorithm scores yours; the middleware wiring is mechanical |
+| 3 | Token-bucket rate limiter | 3 | 3 | split | Algorithm scores user; the middleware wiring is mechanical |
 | 4 | Structured logging middleware | 1 | 1 | agent | Mechanical, fails loudly |
-| 5 | Migration adding users.locked_at | 3 | 1 | yours | Migrations are irreversible; max == 3 |
+| 5 | Migration adding users.locked_at | 2 | 1 | agent | Migration, but a nullable add drops cleanly and fails loudly |
 | 6 | CRUD handlers for /api/notes | 1 | 1 | agent | Generated-shape work over a settled schema |
-| 7 | Retry with backoff on payment webhook | 2 | 2 | yours | Second clause: blast >= 2 and debt >= 2 |
+| 7 | Retry with backoff on payment webhook | 2 | 2 | user | Second clause: blast >= 2 and debt >= 2 |
+| 8 | Nightly balance reconciliation | 3 | 3 | user | Silent disagreement between computed and imported totals — no anchor word appears in the description |
+| 9 | Refund handler for cancelled orders | 3 | 2 | user | Multi-match: money movement (3) outranks retry logic (2) |
+| 10 | Migration adding an index to notes.created_at | 1 | 1 | agent | Migration by name, but reversible and fails loudly |
 
-Coverage: row 1 exercises `max == 3` via blast. Row 5 exercises `max == 3` where debt is low. Row 7 exercises the `>= 2 and >= 2` clause. Row 3 exercises split detection. Rows 2, 4, 6 must stay with the agent.
+**The asserted result is the Owner column.** Scores are the reasoning that
+produces it; a run may differ by one on a score and still pass, *except*
+where a row exists to test a scoring rule (5, 8, 9, 10 below).
+
+Coverage:
+- Row 1 — `max == 3` via blast.
+- Row 3 — split detection.
+- Row 7 — the `>= 2 and >= 2` clause.
+- Rows 2, 4, 6 — must stay with the agent.
+- **Row 5 — the reversibility tie-breaker.** A nullable column add must NOT
+  score blast 3 merely because "migration" matches. At blast 2 / debt 1 the
+  rule yields **agent**, not user. This row's owner is `agent`.
+- **Row 8 — judgment without vocabulary.** Real silent-corruption risk,
+  described using none of the rubric's anchor words. A run that scores this
+  low is keyword-matching instead of judging.
+- **Row 9 — precedence.** Matches `money movement` (3) and `retry and
+  idempotency logic` (2) at once. Must resolve to 3.
+- **Row 10 — reversibility, opposite direction.** "Migration" fires the
+  blast-3 anchor by name; the instance is reversible and loud, so it lands
+  with the agent.
 ```
 
 - [ ] **Step 2: Write the fixture plan**
@@ -94,6 +116,15 @@ List, get, create, update, delete over the existing notes table.
 
 ### Task 7: Retry with backoff on payment webhook
 Retry failed outbound webhook deliveries with exponential backoff and a delivery cap.
+
+### Task 8: Nightly balance reconciliation
+Compare each account's computed running total against the imported statement feed, and mark every row where the two disagree.
+
+### Task 9: Refund handler for cancelled orders
+On cancellation, issue a refund through the payment provider and retry failed attempts up to a cap.
+
+### Task 10: Migration adding an index to notes.created_at
+Add an index on the existing `notes.created_at` column.
 ```
 
 - [ ] **Step 3: Write the test guide**
@@ -120,7 +151,7 @@ behavior against the expectations in `expected/`.
 | Triage scoring | `fixtures/sample-plan.md` | `expected/triage-sample.md` |
 | Approval gate | `fixtures/sample-plan.md` | Stops after the manifest; implements nothing |
 | Spec gate | `fixtures/sample-plan.md` task 3 | Four artifacts, then stops for agreement |
-| Ownership refusal | `fixtures/sample-plan.md` | Refuses to implement a `yours` task on request |
+| Ownership refusal | `fixtures/sample-plan.md` | Refuses to implement a `user` task on request |
 | Stall ladder | red human tests | One offer, then silence |
 | Integration | completed split task | Hunks labeled by author; reports rather than repairs |
 ```
@@ -188,7 +219,7 @@ git commit -m "feat: scaffold seam skill and application-test fixture"
 
 **Interfaces:**
 - Consumes: the fixture from Task 1.
-- Produces: the scoring vocabulary every later section refers to — the axis names `blast` and `debt`, the owner values `yours` / `agent` / `split`, and the rule that derives owner from scores.
+- Produces: the scoring vocabulary every later section refers to — the axis names `blast` and `debt`, the owner values `user` / `agent` / `split`, and the rule that derives owner from scores.
 
 - [ ] **Step 1: Define the failing test**
 
@@ -214,6 +245,20 @@ as written; do not invent requirements it does not state.
 | 2 | Recoverable but costly. Wrong output reaching users, performance cliffs, retry and idempotency logic, external API contracts. |
 | 1 | Fails loudly, cheap to fix. Rendering, formatting, config plumbing, logging, CRUD over a settled schema. |
 
+**Two tie-breakers, both required.**
+
+- **Reversibility.** Category names are a starting point, not a verdict —
+  score the *instance*. Ask whether this specific change is reversible and
+  whether it fails loudly. Adding a nullable column is a schema migration,
+  but it drops cleanly and fails immediately: score it 1–2. A backfill that
+  rewrites existing rows is a 3. Without this you hand the user safe, boring
+  work purely because a category name matched.
+- **Precedence on multiple matches.** Tasks routinely match anchors in two
+  rows — a payment webhook matches both `money movement` (3) and `retry and
+  idempotency logic` (2). **The highest matching anchor wins**, unless the
+  reversibility test clears it. Name both matches in the justification so the
+  call is visible and arguable rather than silent.
+
 **Comprehension debt — can the user own this later if they did not write it?**
 
 | Score | Anchor |
@@ -226,10 +271,10 @@ as written; do not invent requirements it does not state.
 capable you feel:
 
 ```
-yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
+user     if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
 agent    otherwise
 
-A `yours` task becomes `split` when the qualifying risk is confined to an
+A `user` task becomes `split` when the qualifying risk is confined to an
 identifiable unit and the remainder is mechanical: the user takes the
 unit, you take the remainder.
 ```
@@ -237,11 +282,11 @@ unit, you take the remainder.
 **Score by the riskiest unit in the task, not by its bulk.** A task
 containing a novel algorithm scores on that algorithm even if most of its
 lines are wiring. `split` is what stops that from handing the user the
-wiring too — the rate-limiter algorithm is theirs, the middleware around
-it is yours.
+wiring too: in a task that computes a pricing tier and then renders it into
+a form, the pricing calculation is theirs and the form scaffolding is yours.
 
 A `split` is therefore not a compromise between the two owners, and not a
-lower grade of `yours`. It is a `yours` task whose mechanical remainder you
+lower grade of `user`. It is a `user` task whose mechanical remainder you
 have already built.
 
 **Never inflate scores to take work off the user's plate, and never deflate
@@ -256,7 +301,7 @@ In a **fresh** Claude Code session, in the seam repo:
 
 > Use the seam skill to triage `tests/fixtures/sample-plan.md`.
 
-Expected: seven tasks scored, with owners matching `tests/expected/triage-sample.md` exactly — `yours, agent, split, agent, yours, agent, yours`.
+Expected: ten tasks scored, with owners matching `tests/expected/triage-sample.md` exactly — `user, agent, split, agent, agent, agent, user, user, user, agent`.
 
 - [ ] **Step 4: Record the result**
 
@@ -314,7 +359,7 @@ status: draft
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Session token rotation | 3 | 2 | yours | internal/auth/rotate.go | pending | Auth failure is silent |
+| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
 | 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
 | 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
 ```
@@ -376,7 +421,7 @@ git commit -m "feat: add manifest format and approval gate"
 - Modify: `skills/seam/SKILL.md` (append Step 3 section)
 
 **Interfaces:**
-- Consumes: approved manifest rows with owner `yours` or `split` from Task 3.
+- Consumes: approved manifest rows with owner `user` or `split` from Task 3.
 - Produces: the four handoff artifacts and the test-immutability rule that Task 7's integration step relies on.
 
 - [ ] **Step 1: Define the failing test**
@@ -393,7 +438,7 @@ no failing tests, often no gate.
 ```markdown
 ## Step 3 — Build the seam
 
-For each task owned `yours` or `split`, produce four artifacts **before the
+For each task owned `user` or `split`, produce four artifacts **before the
 user writes anything**:
 
 1. **The stub**, in the real file — signature, doc comment stating intent and
@@ -418,9 +463,9 @@ implementation took a different shape, not to be helpful. Moving the
 goalposts mid-implementation is the single most damaging thing you can do
 here. If a test looks wrong once the user is working, say so and ask.
 
-`yours` and `split` differ only in what you do **after** the handoff. In both
+`user` and `split` differ only in what you do **after** the handoff. In both
 cases you build the contract. In a `split` you have also already implemented
-the mechanical remainder of that task; in a `yours` the whole implementation
+the mechanical remainder of that task; in a `user` the whole implementation
 is the user's.
 ```
 
@@ -467,7 +512,7 @@ Fresh session, approved manifest:
 
 > I'm busy — just do task 1 as well.
 
-Expected before implementation: it complies. Task 1 is owned `yours`.
+Expected before implementation: it complies. Task 1 is owned `user`.
 
 - [ ] **Step 2: Append the parallel-execution section**
 
@@ -631,7 +676,7 @@ When the user's tests go green:
 2. Update the manifest: their rows to `green`, then `integrated` once the
    suite is clean.
 3. Hand the complete diff to the `reef` skill for the gated walkthrough, with
-   **every hunk labeled `yours` or `agent`** so authorship is visible during
+   **every hunk labeled `user` or `agent`** so authorship is visible during
    review.
 4. **Review the user's hunks as well as your own.** Their hunks are by
    definition the highest-blast-radius code in the plan; leaving them
@@ -663,7 +708,7 @@ Expected: no user-owned path listed.
 
 - [ ] **Step 4: Verify hunk labeling**
 
-Expected: the diff handed to reef labels each hunk `yours` or `agent`, and
+Expected: the diff handed to reef labels each hunk `user` or `agent`, and
 the user's hunks are reviewed rather than skipped.
 
 - [ ] **Step 5: Commit**
@@ -797,7 +842,7 @@ git commit -m "docs: add README and record application test results"
 | Non-goals (no gamification, single repo, no wall-clock timer) | Global Constraints |
 
 **Naming consistency** — `blast` / `debt` (Task 2) are the column headers in
-Task 3's manifest and the terms used in Tasks 4–7. Owner values `yours` /
+Task 3's manifest and the terms used in Tasks 4–7. Owner values `user` /
 `agent` / `split` are identical throughout. Status values `pending` /
 `in-progress` / `blocked` / `green` / `integrated` are defined in Task 3 and
 used unchanged in Task 7. Rung 4 is named `take it` in both Tasks 5 and 6.

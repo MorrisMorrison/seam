@@ -52,6 +52,11 @@ Input is an implementation plan produced by `writing-plans`. Every task is score
 | 2 | Recoverable but costly. Wrong output reaching users, performance cliffs, retry and idempotency logic, external API contracts. |
 | 1 | Fails loudly, cheap to fix. Rendering, formatting, config plumbing, logging, CRUD over a settled schema. |
 
+**Two tie-breakers, both required.**
+
+- **Reversibility.** Category names are a starting point, not a verdict — score the *instance*. Ask whether this specific change is reversible and whether it fails loudly. Adding a nullable column is a schema migration, but it drops cleanly and fails immediately: score it 1–2. A backfill that rewrites existing rows is a 3. Without this, every migration, index, and column add scores identically to a destructive rewrite, and the human is handed safe, boring work.
+- **Precedence on multiple matches.** Tasks routinely match anchors in two rows — a payment webhook matches both `money movement` (3) and `retry and idempotency logic` (2). **The highest matching anchor wins**, unless the reversibility test clears it. Name both matches in the justification so the call is visible and arguable rather than silent.
+
 ### Comprehension debt — can you own this later if you did not write it?
 
 | Score | Anchor |
@@ -63,10 +68,10 @@ Input is an implementation plan produced by `writing-plans`. Every task is score
 ### Assignment rule
 
 ```
-yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
+user     if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
 agent    otherwise
 
-A `yours` task becomes `split` when the qualifying risk is confined to an
+A `user` task becomes `split` when the qualifying risk is confined to an
 identifiable unit and the remainder is mechanical: the human takes the
 unit, the agent takes the remainder.
 ```
@@ -87,7 +92,7 @@ status: draft | approved | complete
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Session token rotation | 3 | 2 | yours | internal/auth/rotate.go | pending | Auth failure is silent |
+| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
 | 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
 | 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
 ```
@@ -105,7 +110,7 @@ Ownership is per file and can transfer exactly once per task. A `split` task's f
 
 ## Part 2 — The seam (task level)
 
-`yours` and `split` differ only in what the agent does *after* the handoff. In both cases the agent builds the contract; in a `yours` task the entire implementation is then the human's, while in a `split` task the agent has also implemented the mechanical remainder of that same task before handing over.
+`user` and `split` differ only in what the agent does *after* the handoff. In both cases the agent builds the contract; in a `user` task the entire implementation is then the human's, while in a `split` task the agent has also implemented the mechanical remainder of that same task before handing over.
 
 For both, the agent produces four artifacts before the human writes anything:
 
@@ -122,7 +127,7 @@ The spec gate exists to counter the one real risk of a test-based contract: the 
 
 While the human implements their piece, the agent executes its own manifest tasks.
 
-- The agent never writes to a file owned by a `yours` task.
+- The agent never writes to a file owned by a `user` task.
 - Green tests on the human's piece are the progress signal. Nothing polls, watches, or interrupts.
 - If the agent exhausts its own tasks it **stops and reports**. It never starts a task owned by the human, under any circumstances.
 - If the human changes the interface mid-implementation, they say so and the agent re-wires its side. This is expected traffic, not an error path.
@@ -147,7 +152,7 @@ Rung 4 is never suggested by the agent because the human's stated goal is to sta
 When the human's tests go green:
 
 1. The agent integrates and runs the full suite.
-2. The complete diff goes to reef for the gated hunk walkthrough, with every hunk labeled `yours` or `agent`.
+2. The complete diff goes to reef for the gated hunk walkthrough, with every hunk labeled `user` or `agent`.
 3. The agent reviews the human's hunks as well as its own, framed as a risk check rather than a critique. The human's hunks are by definition the highest-blast-radius code in the plan; leaving them unreviewed would mean the riskiest code is the only code nothing checks.
 4. The agent never silently repairs the human's code. If something is wrong it reports and stops.
 
