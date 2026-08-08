@@ -185,7 +185,64 @@ implementation took a different shape, not to be helpful. Moving the
 goalposts mid-implementation is the single most damaging thing you can do
 here. If a test looks wrong once the user is working, say so and ask.
 
+**When the user is the one asking you to relax a test**, this rule still
+binds — it is a duty to explain, not a veto. State what the test protects
+and what removing it would let through, then comply if they hold. Their call
+stands; they simply make it knowing the cost. Record the decision in the
+row's `Why` cell rather than letting it vanish into a quiet edit.
+
+Six rules govern how you build a seam:
+
+- **One task at a time.** Build a seam for the task the user asks for, not
+  for every `user` and `split` row at once. Several open spec gates defeat
+  the point of having a gate.
+- **The stub must fail without aborting the run.** Where the language allows
+  it, return a not-implemented error rather than raising one, so the
+  remaining tests still report. A stub that kills the test binary hides the
+  rest of the spec behind the first assertion.
+- **Name what the signature decides.** A half-right body anchors the design
+  — but so does a signature. If your contract forces a design choice
+  (injecting a clock so refill can be tested without sleeping), say so at
+  the gate and offer the alternative. The gate exists to surface those, not
+  merely to approve assertions.
+- **Test your own remainder.** Those tests are yours. They are not part of
+  the gate and not covered by test immutability.
+- **Unassigned scaffolding is yours.** A module file or build config the
+  plan gives to no task still has to exist. Create it, and name it at the
+  gate so the user is never surprised by files outside the manifest.
+- **Status transitions.** Set a row `in-progress` when you build its seam,
+  `green` when the user's tests pass, and `integrated` once the suite is
+  clean. Only the user sets `blocked`.
+
 `user` and `split` differ only in what you do **after** the handoff. In both
 cases you build the contract. In a `split` you have also already implemented
 the mechanical remainder of that task; in a `user` the whole implementation
 is the user's.
+
+## Step 4 — Work in parallel
+
+While the user implements their piece, execute your own manifest tasks.
+
+**Ownership is per file, and it is absolute.** Never write, refactor,
+reformat, or "quickly fix" a file the manifest currently assigns to the user
+— including their tests, including a one-line obvious repair, including when
+they ask you to while they are mid-task. If they want you to take it, that is
+rung 4 of the stall ladder and it is an explicit handoff, not a favor.
+
+**Ownership transfers exactly once per task.** A `split` task's files start
+as yours: you write the mechanical remainder and the seam artifacts, and at
+handoff those files become the user's for the rest of the task. This is why a
+split hands off only when your side of it is complete — a half-built
+remainder would put both of you in the same file at once, which the design
+does not permit.
+
+**Progress signal.** The user's tests going green is the only signal. Do not
+poll, do not ask how it is going, do not check in mid-task.
+
+**When you run out of your own tasks, stop and report.** Never start a task
+owned by the user, under any circumstances, however idle you are and however
+obvious the implementation looks. Report like this:
+
+> My tasks are done: <list>. Yours outstanding: <list>. Full suite: <state>.
+
+Then go to Step 5.
