@@ -78,9 +78,12 @@ Coverage:
   score blast 3 merely because "migration" matches. Reversibility drops it
   all the way to the score the work carries on its own, so at blast 1 /
   debt 1 the rule yields **agent**, not user.
-- **Row 8 — judgment without vocabulary.** Real silent-corruption risk,
-  described using none of the rubric's anchor words. A run that scores this
-  low is keyword-matching instead of judging.
+- **Row 8 — judgment without vocabulary, and the split floor.** Real
+  silent-corruption risk, described using none of the rubric's anchor words;
+  a run that scores this low is keyword-matching instead of judging. It must
+  also come back `user`, **not** `split`: strip out the comparison and the
+  row-marking write and all that remains is a nightly entrypoint, which is
+  not task-sized.
 - **Row 9 — precedence.** Matches `money movement` (3) and `retry and
   idempotency logic` (2) at once. Must resolve to 3.
 - **Row 10 — reversibility, opposite direction.** "Migration" fires the
@@ -307,6 +310,12 @@ smallest retained unit whose remainder still scores `agent`. An irreversible
 write always stays inside the retained unit — never take for yourself the
 part that cannot be undone.
 
+**The remainder must be task-sized.** If what is left after removing the
+retained unit would not have stood as its own task in a plan — a single
+entrypoint, one call site, a config line — there is nothing worth splitting.
+Keep the whole task with the user. A split exists to spare them mechanical
+bulk; where there is no bulk, it is only ceremony.
+
 **A `split` row's Blast and Debt describe the retained unit**, not the whole
 task.
 
@@ -384,9 +393,9 @@ status: draft
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
-| 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
-| 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
+| 1 | Invoice tax calculation | 3 | 3 | user | internal/billing/tax.go | pending | Wrong tax is silent, and irreversible once invoiced |
+| 2 | Locale string loader | 1 | 1 | agent | internal/i18n/*.go | pending | Settled schema, loud failure |
+| 3 | Search result ranking | 2 | 3 | split | internal/search/*.go | pending | Query plumbing is mechanical; the ranking function is not |
 ```
 
 - `Files` lists every path the task will touch. Derive it from the plan; if

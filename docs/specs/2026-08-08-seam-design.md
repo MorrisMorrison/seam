@@ -84,6 +84,8 @@ unit, the agent takes the remainder.
 
 **When several boundaries pass the stub test**, take the one leaving the smallest retained unit whose remainder still scores `agent`. An irreversible write always stays inside the retained unit — never hand the agent the part that cannot be undone.
 
+**The remainder must be task-sized.** If what is left after removing the retained unit would not have stood as its own task in a plan — a single entrypoint, one call site, a config line — there is nothing worth splitting. Keep the whole task with the human. A split exists to spare them mechanical bulk; where there is no bulk, it is only ceremony.
+
 A `split` row's Blast and Debt describe **the retained unit**, not the whole task.
 
 Score by the riskiest unit in the task, not by its bulk. A task containing a novel algorithm scores on that algorithm even if most of its lines are wiring — `split` is what stops that from handing the human the wiring too.
@@ -102,9 +104,9 @@ status: draft | approved | complete
 
 | # | Task | Blast | Debt | Owner | Files | Status | Why |
 |---|------|-------|------|-------|-------|--------|-----|
-| 1 | Session token rotation | 3 | 2 | user | internal/auth/rotate.go | pending | Auth failure is silent |
-| 2 | Config loader | 1 | 1 | agent | internal/config/*.go | pending | Settled schema, loud failure |
-| 3 | Rate limiter | 3 | 3 | split | internal/limit/*.go | pending | Wiring is mechanical; the bucket algorithm is not |
+| 1 | Invoice tax calculation | 3 | 3 | user | internal/billing/tax.go | pending | Wrong tax is silent, and irreversible once invoiced |
+| 2 | Locale string loader | 1 | 1 | agent | internal/i18n/*.go | pending | Settled schema, loud failure |
+| 3 | Search result ranking | 2 | 3 | split | internal/search/*.go | pending | Query plumbing is mechanical; the ranking function is not |
 ```
 
 `Status` is one of `pending`, `in-progress`, `blocked`, `green`, `integrated`.
