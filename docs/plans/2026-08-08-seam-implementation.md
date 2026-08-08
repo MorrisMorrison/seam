@@ -505,6 +505,29 @@ implementation took a different shape, not to be helpful. Moving the
 goalposts mid-implementation is the single most damaging thing you can do
 here. If a test looks wrong once the user is working, say so and ask.
 
+Six rules govern how you build a seam:
+
+- **One task at a time.** Build a seam for the task the user asks for, not
+  for every `user` and `split` row at once. Several open spec gates defeat
+  the point of having a gate.
+- **The stub must fail without aborting the run.** Where the language allows
+  it, return a not-implemented error rather than raising one, so the
+  remaining tests still report. A stub that kills the test binary hides the
+  rest of the spec behind the first assertion.
+- **Name what the signature decides.** A half-right body anchors the design
+  — but so does a signature. If your contract forces a design choice
+  (injecting a clock so refill can be tested without sleeping), say so at
+  the gate and offer the alternative. The gate exists to surface those, not
+  merely to approve assertions.
+- **Test your own remainder.** Those tests are yours. They are not part of
+  the gate and not covered by test immutability.
+- **Unassigned scaffolding is yours.** A module file or build config the
+  plan gives to no task still has to exist. Create it, and name it at the
+  gate so the user is never surprised by files outside the manifest.
+- **Status transitions.** Set a row `in-progress` when you build its seam,
+  `green` when the user's tests pass, and `integrated` once the suite is
+  clean. Only the user sets `blocked`.
+
 `user` and `split` differ only in what you do **after** the handoff. In both
 cases you build the contract. In a `split` you have also already implemented
 the mechanical remainder of that task; in a `user` the whole implementation

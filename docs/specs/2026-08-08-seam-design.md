@@ -137,6 +137,15 @@ The spec gate exists to counter the one real risk of a test-based contract: the 
 
 **Test immutability.** Once the human accepts the tests, the agent may not modify them without asking. Otherwise it can move the goalposts mid-implementation.
 
+Six rules govern how a seam is built:
+
+- **One task at a time.** Build a seam for the task the human asks for, not for every `user` and `split` row at once. Several open spec gates defeat the point of having a gate.
+- **The stub must fail without aborting the run.** Where the language allows it, return a not-implemented error rather than raising one, so the remaining tests still report. A stub that kills the test binary hides the rest of the spec behind the first assertion.
+- **Name what the signature decides.** A half-right body anchors the design — but so does a signature. If the contract forces a design choice (injecting a clock so refill can be tested without sleeping), say so at the gate and offer the alternative. The gate exists to surface those, not merely to approve assertions.
+- **The agent tests its own remainder.** Those tests are the agent's own and are neither part of the gate nor covered by test immutability.
+- **Unassigned scaffolding belongs to the agent.** A module file or build config that the plan gives to no task still has to exist. The agent creates it and names it at the gate, so the human is never surprised by files outside the manifest.
+- **Status transitions.** The agent sets a row `in-progress` when it builds the seam, `green` when the human's tests pass, and `integrated` once the suite is clean. Only the human sets `blocked`.
+
 ## Parallel execution
 
 While the human implements their piece, the agent executes its own manifest tasks.
