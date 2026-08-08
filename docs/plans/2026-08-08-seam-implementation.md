@@ -17,9 +17,11 @@
 - Assignment rule, copied verbatim from the spec:
   ```
   yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
-  split    if the task is otherwise agent-scored but contains a unit that
-           independently scores yours
   agent    otherwise
+
+  A `yours` task becomes `split` when the qualifying risk is confined to an
+  identifiable unit and the remainder is mechanical: the human takes the
+  unit, the agent takes the remainder.
   ```
 - Manifest path in a target repo: `docs/seam/<plan-slug>.md`. Status values: `pending`, `in-progress`, `blocked`, `green`, `integrated`.
 - Application tests are **never delegated to weak models** — they skim skills and report false passes (recorded lesson from the reef build).
@@ -225,14 +227,22 @@ capable you feel:
 
 ```
 yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
-split    if the task is otherwise agent-scored but contains a unit that
-         independently scores yours
 agent    otherwise
+
+A `yours` task becomes `split` when the qualifying risk is confined to an
+identifiable unit and the remainder is mechanical: the user takes the
+unit, you take the remainder.
 ```
 
-A `split` is not a compromise between the two. It means one identifiable
-unit inside an otherwise mechanical task scores `yours` on its own — the
-rate-limiter algorithm inside a task that is mostly middleware wiring.
+**Score by the riskiest unit in the task, not by its bulk.** A task
+containing a novel algorithm scores on that algorithm even if most of its
+lines are wiring. `split` is what stops that from handing the user the
+wiring too — the rate-limiter algorithm is theirs, the middleware around
+it is yours.
+
+A `split` is therefore not a compromise between the two owners, and not a
+lower grade of `yours`. It is a `yours` task whose mechanical remainder you
+have already built.
 
 **Never inflate scores to take work off the user's plate, and never deflate
 them to give the user more.** The rule is the whole point: it makes each line

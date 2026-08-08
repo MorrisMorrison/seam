@@ -64,10 +64,14 @@ Input is an implementation plan produced by `writing-plans`. Every task is score
 
 ```
 yours    if max(blast, debt) == 3   or   (blast >= 2 and debt >= 2)
-split    if the task is otherwise agent-scored but contains a unit that
-         independently scores yours
 agent    otherwise
+
+A `yours` task becomes `split` when the qualifying risk is confined to an
+identifiable unit and the remainder is mechanical: the human takes the
+unit, the agent takes the remainder.
 ```
+
+Score by the riskiest unit in the task, not by its bulk. A task containing a novel algorithm scores on that algorithm even if most of its lines are wiring — `split` is what stops that from handing the human the wiring too.
 
 This encodes the chosen "dangerous only" threshold: generous enough to catch everything genuinely risky or opaque, tight enough to leave most of the plan running in parallel.
 
