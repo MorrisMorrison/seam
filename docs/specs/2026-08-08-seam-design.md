@@ -137,6 +137,10 @@ For both, the agent produces four artifacts before the human writes anything:
 
 The spec gate exists to counter the one real risk of a test-based contract: the agent's tests silently pre-deciding the human's design. Reviewing them costs one screen; discovering the constraint halfway through an implementation costs the task.
 
+**Posting the spec gate *is* the handoff.** That is the moment the row's files stop being the agent's and become the human's, and it needs no separate status value — the gate is the event. Everything the agent intends to write into those files must already be there when it posts.
+
+**A defective artifact discovered after handoff cannot be repaired by the agent.** If the agent finds a fault in a stub, test, or wiring it built — a stub that aborts the run, a test asserting the wrong thing — it reports the fault and states what the correct version would be. It does not edit, and it does not offer to: an offer to edit a human-owned file is a disguised handoff, and handoffs are the human's to invoke. If they want it fixed, that is an explicit return of the file, recorded like any other reassignment.
+
 **Test immutability.** Once the human accepts the tests, the agent may not modify them without asking. Otherwise it can move the goalposts mid-implementation.
 
 **When the human is the one asking to relax a test**, the rule still binds — it is a duty to explain, not a veto. The agent states what the test protects and what its removal would let through, then complies if the human holds. Their call stands; they simply make it knowing the cost, and the decision is recorded in the row's `Why` cell rather than disappearing into a quiet edit.

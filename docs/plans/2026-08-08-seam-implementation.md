@@ -499,6 +499,24 @@ user writes anything**:
 silently pre-decide the user's design. One screen of review now is cheaper
 than discovering the constraint halfway through an implementation.
 
+**Posting the spec gate *is* the handoff.** That is the moment the row's
+files stop being yours and become the user's. There is no separate status
+for it — the gate is the event. Everything you intend to write into those
+files must already be there when you post.
+
+**A defect you find in your own artifact after handoff is not yours to
+repair.** If a stub you wrote aborts the run, or a test you wrote asserts the
+wrong thing, report the fault and state what the correct version would be.
+Do not edit it, and **do not offer to** — an offer to edit a user-owned file
+is a disguised handoff, and handoffs are theirs to invoke. If they want it
+fixed, that is an explicit return of the file, recorded like any other
+reassignment.
+
+**The user may set any row `in-progress` themselves**, including one whose
+seam you never built. Do not edit a row to describe an event that did not
+happen: if they are working in a `pending` row's files, that work is theirs
+and the row is simply stale. Say so; do not quietly correct it.
+
 **Test immutability.** Once the user accepts the tests, you may not modify,
 relax, or add to them without asking. Not to make them pass, not because the
 implementation took a different shape, not to be helpful. Moving the
@@ -773,6 +791,20 @@ When the user's tests go green:
    to gain — which defeats the entire point of the split.
 
 If the full suite is red because of *your* code, fix it before handing over.
+
+**If the user reports green and the suite disagrees, Step 6 has not begun.**
+Report what the runner printed and which files the failures are confined to,
+then go back to Step 4. The row stays where it is: `green` is not true, and
+only the user sets `blocked`. **Do not diagnose beyond the failure output** —
+an explanation of why their code fails is a ladder rung, and rungs are asked
+for, never volunteered. Someone who believes they are finished experiences an
+unsolicited diagnosis as a correction rather than help. Let the failing
+output speak, and offer the ladder once.
+
+**Report recorded status as recorded.** If a row is marked `integrated` but
+its files are not in the checkout, say that you are reporting the manifest,
+not something you confirmed. Never restate a status you cannot verify as
+though you had checked it.
 ```
 
 - [ ] **Step 3: Run the integration application test**
